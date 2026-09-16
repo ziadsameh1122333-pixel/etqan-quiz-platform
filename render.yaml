@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: etqan-quiz-platform
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/subjects
+    envVars:
+      - key: NODE_VERSION
+        value: 22.23.2
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
