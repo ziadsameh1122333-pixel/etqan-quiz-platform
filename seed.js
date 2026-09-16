@@ -1,0 +1,12 @@
+require('dotenv').config();
+const Database = require('better-sqlite3'); const fs=require('fs'); const path=require('path');
+const dir=path.join(__dirname,'data');fs.mkdirSync(dir,{recursive:true});const db=new Database(path.join(dir,'quiz-platform.db'));db.pragma('foreign_keys = ON');
+db.exec(`CREATE TABLE IF NOT EXISTS subjects (id INTEGER PRIMARY KEY,name TEXT NOT NULL,description TEXT,icon TEXT DEFAULT '📚',image_url TEXT,active INTEGER DEFAULT 1,created_at TEXT DEFAULT CURRENT_TIMESTAMP);CREATE TABLE IF NOT EXISTS quizzes (id INTEGER PRIMARY KEY,subject_id INTEGER NOT NULL,title TEXT NOT NULL,description TEXT,duration_minutes INTEGER DEFAULT 15,active INTEGER DEFAULT 1,created_at TEXT DEFAULT CURRENT_TIMESTAMP,FOREIGN KEY(subject_id) REFERENCES subjects(id) ON DELETE CASCADE);CREATE TABLE IF NOT EXISTS questions (id INTEGER PRIMARY KEY,quiz_id INTEGER NOT NULL,text TEXT NOT NULL,type TEXT NOT NULL,image_url TEXT,points REAL DEFAULT 1,position INTEGER DEFAULT 0,created_at TEXT DEFAULT CURRENT_TIMESTAMP,FOREIGN KEY(quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE);CREATE TABLE IF NOT EXISTS choices (id INTEGER PRIMARY KEY,question_id INTEGER NOT NULL,text TEXT NOT NULL,is_correct INTEGER DEFAULT 0,position INTEGER DEFAULT 0,FOREIGN KEY(question_id) REFERENCES questions(id) ON DELETE CASCADE);`);
+if(db.prepare('SELECT COUNT(*) n FROM subjects').get().n){console.log('Database already contains data.');process.exit();}
+const subject=db.prepare('INSERT INTO subjects(name,description,icon) VALUES (?,?,?)').run('جغرافيا البيئة','اختبارات مراجعة في مفاهيم البيئة والجغرافيا.','🌍').lastInsertRowid;
+const quiz=db.prepare('INSERT INTO quizzes(subject_id,title,description,duration_minutes) VALUES (?,?,?,?)').run(subject,'اختبار البيئة — الوحدة الأولى','اختبار تجريبي قصير لمراجعة الدرس الأول.',10).lastInsertRowid;
+const addQ=db.prepare('INSERT INTO questions(quiz_id,text,type,points,position) VALUES (?,?,?,?,?)');const addC=db.prepare('INSERT INTO choices(question_id,text,is_correct,position) VALUES (?,?,?,?)');
+let q=addQ.run(quiz,'ما المقصود بالبيئة؟','multiple_choice',1,1).lastInsertRowid;[['كل ما يحيط بالكائن الحي',1],['المناخ فقط',0],['التربة فقط',0],['الماء فقط',0]].forEach((c,i)=>addC.run(q,c[0],c[1],i));
+q=addQ.run(quiz,'تعد الشمس مصدرًا رئيسيًا للطاقة على الأرض.','true_false',1,2).lastInsertRowid;[['صح',1],['خطأ',0]].forEach((c,i)=>addC.run(q,c[0],c[1],i));
+console.log('Sample data created.');
+
